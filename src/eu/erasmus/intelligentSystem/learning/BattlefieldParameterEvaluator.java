@@ -8,11 +8,14 @@ import java.io.IOException;
 import java.nio.channels.ShutdownChannelGroupException;
 import java.util.Random; 
 import javax.imageio.ImageIO;
+
+import org.apache.commons.math3.analysis.function.Sigmoid;
 import org.encog.engine.network.activation.ActivationSigmoid; 
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.propagation.Propagation;
 import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
 import robocode.BattleResults; 
 import robocode.control.*;
@@ -63,11 +66,23 @@ private void createDatasetForNN(double [][]RawInputs, double [][]RawOutputs) {
 		}
 }
 
-private BasicNeuralDataSet createAndTrainNN(double [][]RawInputs, double [][]RawOutputs) {
+private void createAndTrainNN(double [][]RawInputs, double [][]RawOutputs, int numOfEpochs) {
 	BasicNeuralDataSet MyDataSet=new BasicNeuralDataSet(RawInputs,RawOutputs);
-	// Create and train the neural network
-	//TODO
-	return MyDataSet;
+	
+	BasicNetwork network = new BasicNetwork();
+	int hiddenUnitsCout = 50;
+	network.addLayer(new BasicLayer(new ActivationSigmoid(),false,hiddenUnitsCout)); // No need for bias
+	network.getStructure().finalizeStructure();
+	network.reset();
+	
+	
+	// training
+	ResilientPropagation propagation = new ResilientPropagation(network, MyDataSet);
+	for (int i = 0; i < numOfEpochs; i++) {
+		propagation.iteration();
+	}
+	
+	// TODO run tests
 }
 
 private void buildOutputImage(int numInputs) {
@@ -122,23 +137,23 @@ private void buildOutputImage(int numInputs) {
 	System.out.println("Image generated.");
 }
 public void run() {
-	
 	runBattles();
+	
 	// Create the training dataset for the neural network
 	final int NUM_NN_INPUTS = 50; // TODO adjust size
+	final int NUM_OF_EPOCHS = 1;
 	double [][]RawInputs=new double[NUMSAMPLES][NUM_NN_INPUTS]; 
 	double [][]RawOutputs=new double[NUMSAMPLES][1];
 	
 	createDatasetForNN(RawInputs,RawOutputs);
 	
-	BasicNeuralDataSet MyDataSet=createAndTrainNN(RawInputs, RawOutputs);
+	createAndTrainNN(RawInputs, RawOutputs, NUM_OF_EPOCHS);
 	
 	System.out.println("Training network...");
 	System.out.println("Training completed.");
 	System.out.println("Testing network...");
 	
 	buildOutputImage(NUM_NN_INPUTS);
-
 		
 	// Make sure that the Java VM is shut down properly
 	System.exit(0);
